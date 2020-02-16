@@ -1,46 +1,40 @@
-#include <WiFi.h>
- 
+#include "WiFi.h"
+#include "ESPAsyncWebServer.h"
 const char* ssid = "dandannoodles";
 const char* password =  "carinaisanalcoholic";
- 
-const uint16_t port = 8090;
-const char * host = "100.65.169.250";
- 
+AsyncWebServer server(80);
+int relayPin = 23;
+bool alarm_go = false;
 void setup()
 {
- 
+  pinMode(relayPin, OUTPUT);
+  digitalWrite(relayPin, HIGH);
   Serial.begin(115200);
- 
   WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.println("...");
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(1000);
+    Serial.println("Connecting to WiFi..");
   }
- 
-  Serial.print("WiFi connected with IP: ");
   Serial.println(WiFi.localIP());
- 
-}
- 
-void loop()
-{
-    WiFiClient client;
- 
-    if (!client.connect(host, port)) {
- 
-        Serial.println("Connection to host failed");
- 
-        delay(1000);
-        return;
-    }
- 
-    Serial.println("Connected to server successful!");
- 
-    client.print("Hello from ESP32!");
- 
-    Serial.println("Disconnecting...");
-    client.stop();
- 
-    delay(10000);
-}
 
+  server.on("/alarm", HTTP_GET, [](AsyncWebServerRequest * request) {
+
+    if (!alarm_go) {
+      request->send(200, "text/plain", "open");
+    } 
+
+  });
+
+  server.on("/locate/bag", HTTP_GET, [](AsyncWebServerRequest * request) {
+    request->send(200, "text/plain", "Your bag is located at St.DanDan");
+  });
+
+  server.on("/dismiss", HTTP_GET, [](AsyncWebServerRequest * request) {
+    request->send(200, "text/plain", "ok");
+    digitalWrite(relayPin, LOW);
+  });
+
+  server.begin();
+}
+void loop() {}
